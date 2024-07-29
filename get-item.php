@@ -3,7 +3,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-$conn = new mysqli('localhost', 'root', '', 'iteminfo'); // Include your database connection
+$conn = new mysqli('localhost', 'root', '', 'iteminfo');
 
 if ($conn->connect_error) {
     echo json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]);
@@ -27,6 +27,10 @@ $result = $conn->query($query);
 
 $items = [];
 while ($row = $result->fetch_assoc()) {
+    if ($row['photo']) {
+        // Convert BLOB to base64 encoded string
+        $row['photo'] = base64_encode($row['photo']);
+    }
     $items[] = $row;
 }
 
