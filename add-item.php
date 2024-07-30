@@ -19,22 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recorder = $conn->real_escape_string($_POST['recorder']);
 
     // Handle file upload
-    $photoPath = '';
+    $photoBlob = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $photo = $_FILES['photo'];
-        $photoPath = 'uploads/' . basename($photo['name']);
-        if (!move_uploaded_file($photo['tmp_name'], $photoPath)) {
-            echo json_encode(['error' => 'Failed to upload photo']);
-            exit();
-        }
+        $photoBlob = file_get_contents($_FILES['photo']['tmp_name']);
     }
 
-    $query = "INSERT INTO item (name, type, description, location, time, recorder, photo) VALUES ('$name', '$type', '$description', '$location', '$time', '$recorder', '$photoPath')";
-    if (mysqli_query($conn, $query)) {
+    $stmt = $conn->prepare("INSERT INTO item (name, type, description, location, time, recorder, photo) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('ssssssb', $name, $type, $description, $location, $time, $recorder, $photoBlob);
+    $null = NULL;
+    $stmt->send_long_data(6, $photoBlob);
+
+    if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
-        echo json_encode(['error' => 'Query error: ' . mysqli_error($conn)]);
+        echo json_encode(['error' => 'Query error: ' . $stmt->error]);
     }
+
+    $stmt->close();
 } else {
     echo json_encode(['error' => 'Invalid request method']);
 }
